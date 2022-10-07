@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Markdown Parser</title>
+        <style>
+            @import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400;1,600&display=swap");
+
+            body,
+            html {
+                margin: 0;
+                overflow: hidden;
+                padding: 0;
+                height: 100vh;
+                max-height: 100vh;
+            }
+
+            #wrapper {
+                display: flex;
+                height: 100%;
+            }
+
+            #wrapper > div {
+                border-right: 1px solid;
+                flex: 1;
+                overflow-y: auto;
+            }
+
+            div[contenteditable] {
+                font-family: "IBM Plex Mono", monospace;
+                outline: none;
+                padding: 2rem;
+            }
+
+            #wrapper > div:nth-child(2) {
+                font-family: "IBM Plex Serif", serif;
+                font-size: 1.5rem;
+                line-height: 1.6;
+            }
+
+            #wrapper > div:nth-child(2) > div {
+                margin: auto;
+                padding: 2rem 0;
+                max-width: 85%;
+            }
+
+            /* Markdown styles */
+            #wrapper > div:nth-child(2) blockquote {
+                border-left: 3px solid;
+                padding-left: 2rem;
+            }
+
+            #wrapper > div:nth-child(2) code {
+                font-family: "IBM Plex Mono", monospace;
+                font-size: 1.45rem;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="wrapper">
+            <div contenteditable id="input"></div>
+            <div id="output"></div>
+        </div>
+        <script src="./script.js"></script>
+    </body>
+</html>
