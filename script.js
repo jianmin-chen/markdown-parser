@@ -27,7 +27,7 @@ const splitBlock = block => {
         return characters.join("");
     };
 
-    const sliceUpTo = char => {
+    const sliceUpTo = (char, ignore = false) => {
         // Slice up until we reach a special character
         if (block.length) block = block.slice(1);
         let characters = [];
@@ -40,7 +40,8 @@ const splitBlock = block => {
             block = block.slice(1);
             block = block.slice(i);
         }
-        return splitBlock(characters.join(""));
+        if (!ignore) return splitBlock(characters.join("")); // Also tokenize inner parts
+        return characters.join(""); // Don't tokenize inner parts. Useful for <code>
     };
 
     while (block.length) {
@@ -48,7 +49,7 @@ const splitBlock = block => {
         if (curr === "*")
             fragments.push({ type: "i", content: sliceUpTo("*") });
         else if (curr === "`")
-            fragments.push({ type: "code", content: sliceUpTo("`") });
+            fragments.push({ type: "code", content: sliceUpTo("`", true) });
         else fragments.push({ type: "normal", content: takeNormal() });
     }
 
@@ -84,6 +85,17 @@ const processBlock = block => {
         block = block.slice(1);
         type = "blockquote";
         block = block.trim();
+    } else if (block.startsWith("```")) {
+        // Code blocks
+        block = block.split("\n");
+        let lang = block[0].slice(3) || "auto";
+        block = block.slice(1, block.length - 1); // Remove last line
+
+        return {
+            type: "codeBlock",
+            content: block.join("\n"),
+            attributes: { lang }
+        };
     }
 
     let token = { type, content: splitBlock(block) };
@@ -94,12 +106,16 @@ const processBlock = block => {
 
 const parse = tokens => {
     if (typeof tokens === "string") return tokens; // Only a string
-    return tokens.map(token => {
+    let result = tokens.map(token => {
         if (token.type === "normal") return token.content; // Strings
         else if (token.type === "code") return tag("code", token.content);
-        // TODO: Determine if we need to replace this with parse(token.content)
-        else return tag(token.type, parse(token.content));
+        else if (token.type === "codeBlock") {
+            return tag("pre", token.content, {
+                class: `language-${token.attributes.lang} hljs`
+            });
+        } else return tag(token.type, parse(token.content));
     });
+    return result;
 };
 
 const tag = (name, content = [], attributes = {}) => {
@@ -137,7 +153,7 @@ const renderHTML = element => {
         let result = [];
         if (attributes)
             for (let name in attributes)
-                result.push(` name="${escapeHTML(attributes[name])}"`);
+                result.push(` ${name}="${escapeHTML(attributes[name])}"`);
         return result.join("");
     };
 
@@ -171,14 +187,35 @@ const parseMarkdown = markdown => {
     // :check 4. Wrap each piece into the correct HTML tags.
     // :check 5. Combine everything into a single HTML document.
 
-    let blocks = markdown.split("\n\n");
-    let wrapper = tag("div"); // Contains the output
-    for (let block of blocks) {
-        wrapper.content.push(processBlock(block));
+    let blocks = markdown
+        .split("\n\n")
+        .flatMap(line => (!line.length ? [] : line.split("\n")));
+    let fragments = [];
+
+    let inCodeBlock = false;
+    let codeFragments = [];
+    for (let i = 0; i < blocks.length; i++) {
+        let block = blocks[i];
+        if (block.startsWith("```")) {
+            if (inCodeBlock) {
+                // Exit code block
+                codeFragments.push(block);
+                fragments.push(codeFragments.join("\n"));
+                codeFragments = [];
+                inCodeBlock = false;
+            } else {
+                inCodeBlock = true;
+                codeFragments.push(block);
+            }
+        } else if (inCodeBlock) codeFragments.push(block);
+        else fragments.push(block);
     }
+
+    let wrapper = tag("div"); // Contains the output
+    for (let fragment of fragments)
+        wrapper.content.push(processBlock(fragment));
     wrapper.content = parse(wrapper.content);
-    let result = renderHTML(wrapper);
-    return result;
+    return renderHTML(wrapper);
 };
 
 window.onload = () => {
@@ -188,5 +225,8 @@ window.onload = () => {
             document.getElementById("output").innerHTML = parseMarkdown(
                 document.getElementById("input").innerText
             );
+            document
+                .querySelectorAll(".hljs")
+                .forEach(el => hljs.highlightElement(el));
         });
 };

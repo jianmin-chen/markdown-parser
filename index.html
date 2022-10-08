@@ -2,6 +2,10 @@
 <html>
     <head>
         <title>Markdown Parser</title>
+        <link
+            rel="stylesheet"
+            href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.6.0/styles/default.min.css" />
+        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.6.0/highlight.min.js"></script>
         <style>
             @import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400;1,600&display=swap");
 
@@ -52,6 +56,11 @@
             #wrapper > div:nth-child(2) code {
                 font-family: "IBM Plex Mono", monospace;
                 font-size: 1.45rem;
+            }
+
+            #wrapper > div:nth-child(2) .hljs {
+                overflow-x: auto;
+                padding: 2rem;
             }
         </style>
     </head>
