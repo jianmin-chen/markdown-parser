@@ -23,42 +23,46 @@
                 height: 100%;
             }
 
-            #wrapper > div {
-                border-right: 1px solid;
+            #input,
+            #output {
                 flex: 1;
                 overflow-y: auto;
             }
 
-            div[contenteditable] {
+            #input {
+                border: none;
                 font-family: "IBM Plex Mono", monospace;
                 outline: none;
                 padding: 2rem;
+                resize: none;
             }
 
-            #wrapper > div:nth-child(2) {
+            #output {
+                border-left: 1px solid #cbd5e1;
                 font-family: "IBM Plex Serif", serif;
                 font-size: 1.5rem;
                 line-height: 1.6;
             }
 
-            #wrapper > div:nth-child(2) > div {
+            #output > div {
+                /* Actual Markdown content */
                 margin: auto;
                 padding: 2rem 0;
                 max-width: 85%;
             }
 
             /* Markdown styles */
-            #wrapper > div:nth-child(2) blockquote {
+            #output blockquote {
                 border-left: 3px solid;
                 padding-left: 2rem;
             }
 
-            #wrapper > div:nth-child(2) code {
+            #output code {
                 font-family: "IBM Plex Mono", monospace;
                 font-size: 1.45rem;
             }
 
-            #wrapper > div:nth-child(2) .hljs {
+            #output .hljs {
                 overflow-x: auto;
                 padding: 2rem;
             }
@@ -66,7 +70,7 @@
     </head>
     <body>
         <div id="wrapper">
-            <div contenteditable id="input"></div>
+            <textarea id="input"></textarea>
             <div id="output"></div>
         </div>
         <script src="./script.js"></script>

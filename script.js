@@ -10,8 +10,6 @@ const splitBlock = block => {
     // :check Inline code
     // Links
 
-    if (!block.length) return [];
-
     let specialChars = ["*", "`"];
     let fragments = [];
 
@@ -27,28 +25,42 @@ const splitBlock = block => {
         return characters.join("");
     };
 
-    const sliceUpTo = (char, ignore = false) => {
-        // Slice up until we reach a special character
-        if (block.length) block = block.slice(1);
+    const sliceUpTo = (phrase, ignore = false) => {
+        // Slice up until we reach a special phrase
+        if (block.length) block = block.slice(phrase.length);
         let characters = [];
         let i = 0;
-        while (block.charAt(i) != char && i < block.length) {
+        while (
+            block.slice(i, i + phrase.length) != phrase &&
+            i < block.length
+        ) {
             characters.push(block.charAt(i));
             i++;
         }
         if (block.length) {
-            block = block.slice(1);
+            block = block.slice(phrase.length);
             block = block.slice(i);
         }
         if (!ignore) return splitBlock(characters.join("")); // Also tokenize inner parts
         return characters.join(""); // Don't tokenize inner parts. Useful for <code>
     };
 
+    if (!block.length) return [];
+
     while (block.length) {
         let curr = block.charAt(0);
-        if (curr === "*")
-            fragments.push({ type: "i", content: sliceUpTo("*") });
-        else if (curr === "`")
+        if (curr === "*") {
+            // Determine if italic, bold, mix of both, or unordered list
+            // ! Not the best way to do it, but I couldn't think of a smarter way. Something in my mind tells me recursion, but I have no idea how to go about it. Clues?
+            if (block.length > 2 && block.slice(0, 3) === "***")
+                fragments.push({
+                    type: "boldItalic",
+                    content: sliceUpTo("***")
+                });
+            else if (block.length > 1 && block.slice(0, 2) === "**")
+                fragments.push({ type: "b", content: sliceUpTo("**") });
+            else fragments.push({ type: "i", content: sliceUpTo("*") });
+        } else if (curr === "`")
             fragments.push({ type: "code", content: sliceUpTo("`", true) });
         else fragments.push({ type: "normal", content: takeNormal() });
     }
@@ -60,7 +72,7 @@ const processBlock = block => {
     // What we need to process here:
     // :check Headings
     // :check Blockquotes
-    // Code blocks
+    // :check Code blocks
     // :check Horizontal breaks
     // Images
     // Unordered and ordered lists
@@ -70,7 +82,7 @@ const processBlock = block => {
 
     if (block === "---") {
         // Horizontal lines
-        block = "";
+        block = -1; // * -1 represents no content (vs. purposely placed empty string)
         type = "hr";
     } else if (block.startsWith("#")) {
         // Headings
@@ -98,22 +110,28 @@ const processBlock = block => {
         };
     }
 
-    let token = { type, content: splitBlock(block) };
+    let token = { type, content: block != -1 ? splitBlock(block) : -1 };
     return token;
 };
 
 // PART OF PARSER
 
 const parse = tokens => {
-    if (typeof tokens === "string") return tokens; // Only a string
+    if (
+        typeof tokens === "string" ||
+        (typeof tokens === "number" && tokens === -1)
+    )
+        return tokens; // * Only a string (user content) or -1 (empty block)
     let result = tokens.map(token => {
         if (token.type === "normal") return token.content; // Strings
         else if (token.type === "code") return tag("code", token.content);
-        else if (token.type === "codeBlock") {
+        else if (token.type === "codeBlock")
             return tag("pre", token.content, {
                 class: `language-${token.attributes.lang} hljs`
             });
-        } else return tag(token.type, parse(token.content));
+        else if (token.type === "boldItalic")
+            return tag("b", [tag("i", parse(token.content))]);
+        else return tag(token.type, parse(token.content));
     });
     return result;
 };
@@ -160,7 +178,7 @@ const renderHTML = element => {
     const render = element => {
         if (typeof element === "string")
             pieces.push(escapeHTML(element)); // Text node
-        else if (!element.content || !element.content.length)
+        else if (element.content === -1)
             pieces.push(
                 `<${element.name}${renderAttributes(element.attributes)}/>`
             );
@@ -219,14 +237,66 @@ const parseMarkdown = markdown => {
 };
 
 window.onload = () => {
+    // * Obviously, storing and comparing state might be more efficient
+    const update = () => {
+        // ? Notice the use of update() multiple times below in the event listeners. I've observed a couple of interesting things:
+        // ? * If I only place update() in keydown, then it bounces and passes in all characters except for the one the user just typed in
+        // ? * If I only place update() in input, then Backspace doesn't work
+        document.getElementById("output").innerHTML = parseMarkdown(
+            document.getElementById("input").value
+        );
+        document
+            .querySelectorAll(".hljs")
+            .forEach(el => hljs.highlightElement(el));
+    };
+
+    document.getElementById("input").addEventListener("input", update);
+
+    let tabs = 0;
     document
         .getElementById("input")
-        .addEventListener("input", function (event) {
-            document.getElementById("output").innerHTML = parseMarkdown(
-                document.getElementById("input").innerText
-            );
-            document
-                .querySelectorAll(".hljs")
-                .forEach(el => hljs.highlightElement(el));
+        .addEventListener("keydown", function (event) {
+            let start = this.selectionStart;
+            let end = this.selectionEnd;
+
+            // Emulate tabbing
+            if (event.key === "Tab") {
+                event.preventDefault();
+                // Set textarea value to text before caret + tab + text after caret
+                this.value = `${this.value.substring(
+                    0,
+                    start
+                )}    ${this.value.substring(end)}`;
+                this.selectionStart = this.selectionEnd = start + 4;
+                tabs += 4;
+            } else if (event.key === "Enter") {
+                event.preventDefault();
+                // Set textarea value to text before caret + newline + current # of tabs + text after caret
+                this.value = `${this.value.substring(0, start)}\n${" ".repeat(
+                    tabs
+                )}${this.value.substring(end)}`;
+                this.selectionStart = this.selectionEnd =
+                    start + "\n".length + tabs;
+            } else if (event.key === "Backspace") {
+                event.preventDefault();
+                let prev = this.value.substring(start - tabs, start);
+                if (tabs && prev === " ".repeat(tabs)) {
+                    // Go back a tab
+                    tabs -= 4;
+                    this.value = `${this.value.substring(
+                        0,
+                        start - 4
+                    )}${this.value.substring(end)}`;
+                    this.selectionStart = this.selectionEnd = start - 4;
+                } else if (prev != undefined) {
+                    // Go back as usual
+                    this.value = `${this.value.substring(
+                        0,
+                        start - 1
+                    )}${this.value.substring(end)}`;
+                    this.selectionStart = this.selectionEnd = start - 1;
+                }
+                update();
+            } else update();
         });
 };
