@@ -6,8 +6,16 @@
             rel="stylesheet"
             href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.6.0/styles/default.min.css" />
         <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.6.0/highlight.min.js"></script>
+        <script src="./utils.js"></script>
+        <script src="./parser.js"></script>
         <style>
-            @import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400;1,600&display=swap");
+            /* TODO
+             * Rewrite into a nicer format, possibly place in separate CSS file
+             * Use Autoprefixer
+             * Move fonts to local
+             * Add media queries
+             */
+            @import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono&family=IBM+Plex+Sans&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400;1,600&display=swap");
 
             body,
             html {
@@ -18,6 +26,11 @@
                 max-height: 100vh;
             }
 
+            button,
+            textarea {
+                outline: none;
+            }
+
             #wrapper {
                 display: flex;
                 height: 100%;
@@ -25,33 +38,98 @@
 
             #input,
             #output {
-                flex: 1;
+                flex: 3;
                 overflow-y: auto;
+                max-height: 100vh;
+            }
+
+            #menu {
+                background-color: #f1f5f9;
+                border-right: 1px solid #cbd5e1;
+                flex: 1;
+                position: relative;
+            }
+
+            #new {
+                /* New file button */
+                background-color: transparent;
+                border: 0;
+                border-top: 1px solid #cbd5e1;
+                color: #94a3b8;
+                cursor: pointer;
+                display: block;
+                font-family: "IBM Plex Sans", sans-serif;
+                font-size: 1.1rem;
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                padding: 1rem;
+                text-align: left;
+                width: 100%;
+            }
+
+            #menu ul {
+                /* File tree */
+                font-family: "IBM Plex Sans", sans-serif;
+                list-style: none;
+                padding: 0;
+            }
+
+            #menu ul li button {
+                background-color: transparent;
+                border: none;
+                display: block;
+                font-family: inherit;
+                font-size: inherit;
+                padding: 0.5rem 1rem;
+                text-align: left;
+                width: 100%;
+            }
+
+            #menu ul li button.active,
+            #menu ul li button:hover {
+                background-color: #e2e8f0;
+                cursor: pointer;
             }
 
             #input {
                 border: none;
                 font-family: "IBM Plex Mono", monospace;
+                font-size: 0.995rem;
                 outline: none;
-                padding: 2rem;
+                overflow-y: scroll;
+                padding: 3rem;
                 resize: none;
             }
 
             #output {
                 border-left: 1px solid #cbd5e1;
                 font-family: "IBM Plex Serif", serif;
-                font-size: 1.5rem;
+                font-size: 1.2rem;
                 line-height: 1.6;
             }
 
             #output > div {
                 /* Actual Markdown content */
                 margin: auto;
-                padding: 2rem 0;
+                padding: 2.5rem 0;
                 max-width: 85%;
             }
 
+            #output > div *:nth-child(1) {
+                margin-top: 0;
+            }
+
             /* Markdown styles */
+            #output h1,
+            h2,
+            h3,
+            h4,
+            h5,
+            h6 {
+                line-height: normal;
+            }
+
             #output blockquote {
                 border-left: 3px solid;
                 padding-left: 2rem;
@@ -59,7 +137,7 @@
 
             #output code {
                 font-family: "IBM Plex Mono", monospace;
-                font-size: 1.45rem;
+                font-size: 1.1rem;
             }
 
             #output .hljs {
@@ -70,9 +148,13 @@
     </head>
     <body>
         <div id="wrapper">
+            <div id="menu">
+                <ul id="tree"></ul>
+                <button id="new">&plus; New page</button>
+            </div>
             <textarea id="input"></textarea>
             <div id="output"></div>
         </div>
-        <script src="./script.js"></script>
+        <script src="./index.js"></script>
     </body>
 </html>

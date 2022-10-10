@@ -3,7 +3,7 @@
 
 // PART OF TOKENIZER
 
-const splitBlock = block => {
+const splitBlock = (block, inner = false) => {
     // What we need to process here:
     // :check Italic
     // Bold
@@ -46,6 +46,17 @@ const splitBlock = block => {
     };
 
     if (!block.length) return [];
+    else if (block.startsWith("* ") && !inner)
+        return {
+            type: "li",
+            content: splitBlock(block.slice(2))
+        };
+    // Unordered list item
+    else if (block.search(/[0-9]+\./) === 0)
+        return {
+            type: "li",
+            content: splitBlock(block.slice(block.match(/[0-9]+\./)[0].length))
+        };
 
     while (block.length) {
         let curr = block.charAt(0);
@@ -86,18 +97,35 @@ const processBlock = block => {
         type = "hr";
     } else if (block.startsWith("#")) {
         // Headings
-        while (block.charAt(0) === "#") {
-            block = block.slice(1);
+        let fragment = block;
+        while (fragment.charAt(0) === "#") {
+            fragment = fragment.slice(1);
             header++;
         }
-        type = `h${header}`;
-        block = block.trim();
+
+        if (fragment[0] == " ") {
+            // No space afterwards != header
+            type = `h${header}`;
+            block = block.slice(header).trim();
+        }
     } else if (block.startsWith(">")) {
         // Blockquotes
         block = block.slice(1);
         type = "blockquote";
         block = block.trim();
-    } else if (block.startsWith("```")) {
+    } else if (block.startsWith("* "))
+        // Unordered list
+        return {
+            type: "ul",
+            content: block.split("\n").flatMap(li => splitBlock(li, false))
+        };
+    else if (block.search(/[0-9]+\./) == 0)
+        // Ordered list
+        return {
+            type: "ol",
+            content: block.split("\n").flatMap(li => splitBlock(li, false))
+        };
+    else if (block.startsWith("```")) {
         // Code blocks
         block = block.split("\n");
         let lang = block[0].slice(3) || "auto";
@@ -110,7 +138,7 @@ const processBlock = block => {
         };
     }
 
-    let token = { type, content: block != -1 ? splitBlock(block) : -1 };
+    let token = { type, content: block != -1 ? splitBlock(block, false) : -1 };
     return token;
 };
 
@@ -146,22 +174,6 @@ const tag = (name, content = [], attributes = {}) => {
 const header = (heading, content) => tag(heading, content);
 
 // PART OF RENDERER
-
-const escapeHTML = text => {
-    // > When we have created a document, it will have to be reduced to a string.
-    // > But building this string from the data structures we have been producing is very straightforward. The important thing is to remember to transform the special characters in the text of our document.
-    let replacements = [
-        [/&/g, "&amp;"], // Match all ampersands
-        [/"/g, "&quot;"], // Match all quotes
-        [/</g, "&lt;"], // Match all <
-        [/>/g, "&gt;"] // Match all >
-    ];
-
-    for (let special of replacements)
-        text = text.replace(special[0], special[1]);
-
-    return text;
-};
 
 const renderHTML = element => {
     let pieces = [];
@@ -205,15 +217,32 @@ const parseMarkdown = markdown => {
     // :check 4. Wrap each piece into the correct HTML tags.
     // :check 5. Combine everything into a single HTML document.
 
-    let blocks = markdown
-        .split("\n\n")
-        .flatMap(line => (!line.length ? [] : line.split("\n")));
+    let blocks = markdown.split("\n");
     let fragments = [];
 
     let inCodeBlock = false;
     let codeFragments = [];
+    let olFragments = [];
+    let ulFragments = [];
     for (let i = 0; i < blocks.length; i++) {
         let block = blocks[i];
+
+        let ulRegex = block.length ? block.search(/\* /) : -1;
+        if (!(ulRegex === 0) && ulFragments.length) {
+            // End of unordered list
+            fragments.push(ulFragments.join("\n"));
+            ulFragments = [];
+        }
+
+        let olRegex = block.length ? block.search(/[0-9]+\./) : -1;
+        if (!(olRegex === 0) && olFragments.length) {
+            // End of ordered list
+            fragments.push(olFragments.join("\n"));
+            olFragments = [];
+        }
+
+        if (!block.length && !inCodeBlock) continue; // Newline
+
         if (block.startsWith("```")) {
             if (inCodeBlock) {
                 // Exit code block
@@ -226,77 +255,18 @@ const parseMarkdown = markdown => {
                 codeFragments.push(block);
             }
         } else if (inCodeBlock) codeFragments.push(block);
+        else if (ulRegex === 0) ulFragments.push(block);
+        else if (olRegex === 0) olFragments.push(block);
         else fragments.push(block);
     }
+
+    if (ulFragments.length)
+        fragments.push(ulFragments.join("\n")); // End of unordered list
+    else if (olFragments.length) fragments.push(olFragments.join("\n")); // End of unordered list
 
     let wrapper = tag("div"); // Contains the output
     for (let fragment of fragments)
         wrapper.content.push(processBlock(fragment));
     wrapper.content = parse(wrapper.content);
     return renderHTML(wrapper);
-};
-
-window.onload = () => {
-    // * Obviously, storing and comparing state might be more efficient
-    const update = () => {
-        // ? Notice the use of update() multiple times below in the event listeners. I've observed a couple of interesting things:
-        // ? * If I only place update() in keydown, then it bounces and passes in all characters except for the one the user just typed in
-        // ? * If I only place update() in input, then Backspace doesn't work
-        document.getElementById("output").innerHTML = parseMarkdown(
-            document.getElementById("input").value
-        );
-        document
-            .querySelectorAll(".hljs")
-            .forEach(el => hljs.highlightElement(el));
-    };
-
-    document.getElementById("input").addEventListener("input", update);
-
-    let tabs = 0;
-    document
-        .getElementById("input")
-        .addEventListener("keydown", function (event) {
-            let start = this.selectionStart;
-            let end = this.selectionEnd;
-
-            // Emulate tabbing
-            if (event.key === "Tab") {
-                event.preventDefault();
-                // Set textarea value to text before caret + tab + text after caret
-                this.value = `${this.value.substring(
-                    0,
-                    start
-                )}    ${this.value.substring(end)}`;
-                this.selectionStart = this.selectionEnd = start + 4;
-                tabs += 4;
-            } else if (event.key === "Enter") {
-                event.preventDefault();
-                // Set textarea value to text before caret + newline + current # of tabs + text after caret
-                this.value = `${this.value.substring(0, start)}\n${" ".repeat(
-                    tabs
-                )}${this.value.substring(end)}`;
-                this.selectionStart = this.selectionEnd =
-                    start + "\n".length + tabs;
-            } else if (event.key === "Backspace") {
-                event.preventDefault();
-                let prev = this.value.substring(start - tabs, start);
-                if (tabs && prev === " ".repeat(tabs)) {
-                    // Go back a tab
-                    tabs -= 4;
-                    this.value = `${this.value.substring(
-                        0,
-                        start - 4
-                    )}${this.value.substring(end)}`;
-                    this.selectionStart = this.selectionEnd = start - 4;
-                } else if (prev != undefined) {
-                    // Go back as usual
-                    this.value = `${this.value.substring(
-                        0,
-                        start - 1
-                    )}${this.value.substring(end)}`;
-                    this.selectionStart = this.selectionEnd = start - 1;
-                }
-                update();
-            } else update();
-        });
 };
