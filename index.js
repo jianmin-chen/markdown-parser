@@ -96,7 +96,9 @@ const update = () => {
 window.onload = () => {
     input = document.getElementById("input");
     output = document.getElementById("output");
-    if (getActive()) initState(); // Only initiailize state if there is data being stored
+    if (getActive())
+        initState(); // Only initiailize state if there is data being stored
+    else input.disabled = true;
 
     // * Obviously, storing and comparing state might be more efficient
     input.addEventListener("input", update);
@@ -155,5 +157,6 @@ window.onload = () => {
 
         saveMarkdown("", filenameInput, true);
         setActive(filenameInput);
+        if (input.disabled) input.disabled = false;
     });
 };

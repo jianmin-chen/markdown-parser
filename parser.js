@@ -1,16 +1,25 @@
 // TODO in the future
-// Add support for tables
+// Tables
+// Footnotes
+// Definition lists
+// Task lists
+// Emojis
+// Subscript
+// Superscript
+// Highlight
+// Strikethrough
+// Heading IDs
 
 // PART OF TOKENIZER
 
 const splitBlock = (block, inner = false) => {
     // What we need to process here:
     // :check Italic
-    // Bold
+    // :check Bold
     // :check Inline code
-    // Links
+    // :check Links
 
-    let specialChars = ["*", "`"];
+    let specialChars = ["*", "`", "["];
     let fragments = [];
 
     const takeNormal = () => {
@@ -47,12 +56,13 @@ const splitBlock = (block, inner = false) => {
 
     if (!block.length) return [];
     else if (block.startsWith("* ") && !inner)
+        // Unordered list item
         return {
             type: "li",
             content: splitBlock(block.slice(2))
         };
-    // Unordered list item
     else if (block.search(/[0-9]+\./) === 0)
+        // Ordered list item
         return {
             type: "li",
             content: splitBlock(block.slice(block.match(/[0-9]+\./)[0].length))
@@ -73,7 +83,12 @@ const splitBlock = (block, inner = false) => {
             else fragments.push({ type: "i", content: sliceUpTo("*") });
         } else if (curr === "`")
             fragments.push({ type: "code", content: sliceUpTo("`", true) });
-        else fragments.push({ type: "normal", content: takeNormal() });
+        else if (curr === "[") {
+            let fragment = { type: "a", content: sliceUpTo("]") };
+            if (block.charAt(0) === "(")
+                fragment.attributes = { href: sliceUpTo(")", true) };
+            fragments.push(fragment);
+        } else fragments.push({ type: "normal", content: takeNormal() });
     }
 
     return fragments;
@@ -85,8 +100,8 @@ const processBlock = block => {
     // :check Blockquotes
     // :check Code blocks
     // :check Horizontal breaks
-    // Images
-    // Unordered and ordered lists
+    // :Images
+    // :check Unordered and ordered lists
     block = block.trim();
     let type = "p";
     let header = 0;
@@ -119,7 +134,7 @@ const processBlock = block => {
             type: "ul",
             content: block.split("\n").flatMap(li => splitBlock(li, false))
         };
-    else if (block.search(/[0-9]+\./) == 0)
+    else if (block.search(/[0-9]+\./) === 0)
         // Ordered list
         return {
             type: "ol",
@@ -135,6 +150,20 @@ const processBlock = block => {
             type: "codeBlock",
             content: block.join("\n"),
             attributes: { lang }
+        };
+    } else if (
+        block.search(/!\[.+\]\(.+\)/) === 0 &&
+        block.match(/!\[.+\]\(.+\)/)[0].length === block.length
+    ) {
+        // Image
+        let alt = block.match(/\[.+\]/)[0];
+        alt = alt.slice(1, alt.length - 1); // Remove the brackets around alt value
+        let src = block.match(/\(.+\)/)[0];
+        src = src.slice(1, src.length - 1); // Remove the parentheses around src value
+        return {
+            type: "img",
+            content: -1,
+            attributes: { alt, src }
         };
     }
 
@@ -159,7 +188,12 @@ const parse = tokens => {
             });
         else if (token.type === "boldItalic")
             return tag("b", [tag("i", parse(token.content))]);
-        else return tag(token.type, parse(token.content));
+        else
+            return tag(
+                token.type,
+                parse(token.content),
+                token.attributes || {}
+            );
     });
     return result;
 };
