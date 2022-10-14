@@ -32,6 +32,43 @@
                 outline: none;
             }
 
+            #contextmenu {
+                /* The context menu */
+                background-color: white;
+                border-radius: 5px;
+                box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+                display: none;
+                font-family: "IBM Plex Sans", sans-serif;
+                position: absolute;
+                top: 15px;
+                left: 15px;
+                z-index: 999;
+                width: 150px;
+            }
+
+            #contextmenu .item {
+                cursor: pointer;
+                padding: 0.75rem 1rem;
+            }
+
+            #contextmenu .item:hover {
+                background-color: #f8fafc;
+            }
+
+            #contextmenu .item:nth-child(1):hover {
+                border-top-left-radius: 15px;
+                border-top-right-radius: 15px;
+            }
+
+            #contextmenu .item:nth-last-child(1):hover {
+                border-bottom-left-radius: 15px;
+                border-bottom-right-radius: 15px;
+            }
+
+            #contextmenu .item:not(:nth-last-child(1)) {
+                border-bottom: 1px solid #e2e8f0;
+            }
+
             #wrapper {
                 display: flex;
                 height: 100%;
@@ -152,6 +189,11 @@
         </style>
     </head>
     <body>
+        <div id="contextmenu">
+            <div class="item" id="delete">
+                <span style="color: red">Delete</span>
+            </div>
+        </div>
         <div id="wrapper">
             <div id="menu">
                 <ul id="tree"></ul>

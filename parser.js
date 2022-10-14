@@ -3,11 +3,10 @@
 // Footnotes
 // Definition lists
 // Task lists
-// Emojis
-// Subscript
-// Superscript
+// :check Subscript
+// :check Superscript
 // Highlight
-// Strikethrough
+// :check Strikethrough
 // Heading IDs
 
 // PART OF TOKENIZER
@@ -19,7 +18,7 @@ const splitBlock = (block, inner = false) => {
     // :check Inline code
     // :check Links
 
-    let specialChars = ["*", "`", "["];
+    let specialChars = ["*", "`", "[", "~", "^"];
     let fragments = [];
 
     const takeNormal = () => {
@@ -83,6 +82,13 @@ const splitBlock = (block, inner = false) => {
             else fragments.push({ type: "i", content: sliceUpTo("*") });
         } else if (curr === "`")
             fragments.push({ type: "code", content: sliceUpTo("`", true) });
+        else if (curr === "~") {
+            // Determine if subscript or strikethrough
+            if (block.length > 1 && block.slice(0, 2) === "~~")
+                fragments.push({ type: "s", content: sliceUpTo("~~") });
+            else fragments.push({ type: "sub", content: sliceUpTo("~") });
+        } else if (curr === "^")
+            fragments.push({ type: "sup", content: sliceUpTo("^") });
         else if (curr === "[") {
             let fragment = { type: "a", content: sliceUpTo("]") };
             if (block.charAt(0) === "(")

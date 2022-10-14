@@ -2,13 +2,41 @@
 // Add a custom right-click menu in the file tree, with Rename and Delete
 // Add "Download Markdown" and "Download HTML" features
 
-let input, output;
+let input, output, contextmenu;
 
 // Local storage functions
 // TODO: Transfer to API - that's why I'm writing this with async functions when there's no need for async functions
 let filename,
     active,
     files = [];
+
+const updateTree = remove => {
+    // Update in tree
+    document.getElementById("tree").innerHTML = "";
+    for (let i = files.length - 1; i >= 0; i--) {
+        let file = files[i];
+        if (file.innerText === remove) {
+            // Remove from tree
+            files.splice(i, 1);
+            continue;
+        } else if (file.innerText === active)
+            file.querySelector("button").classList.add("active");
+        else if (file.querySelector("button").classList.contains("active"))
+            file.querySelector("button").classList.remove("active");
+        document.getElementById("tree").appendChild(file);
+    }
+};
+
+const clearEditor = () => {
+    input.disabled = true;
+    input.value = "";
+    output.innerHTML = "";
+};
+
+const deleteButton = () => {
+    deleteFile(contextmenu.getAttribute("filename"));
+    contextmenu.style.display = "none";
+};
 
 const saveMarkdown = (markdown, filename = getActive(), isNew = false) => {
     let files = localStorage.getItem("markdown-parser");
@@ -39,22 +67,36 @@ const getFiles = () => {
     if (files) return Object.keys(JSON.parse(files));
 };
 
-const setActive = filename => {
-    localStorage.setItem("markdown-parser-active", filename);
-    active = filename;
+const deleteFile = filename => {
+    let files = localStorage.getItem("markdown-parser");
+    if (files) {
+        // Delete file by filename
+        files = JSON.parse(files);
+        if (files[filename] != undefined) {
+            delete files[filename];
+            localStorage.setItem("markdown-parser", JSON.stringify(files));
+            if (active === filename) setActive();
+            updateTree(filename);
+        } else throw new Error("404 Not Found: File doesn't exist");
+    } else throw new Error("404 Not Found: File doesn't exist");
+};
 
-    // Update in tree
-    for (let file of files) {
-        if (file.innerText === active)
-            file.querySelector("button").classList.add("active");
-        else if (file.querySelector("button").classList.contains("active"))
-            file.querySelector("button").classList.remove("active");
-        document.getElementById("tree").appendChild(file);
+const setActive = filename => {
+    if (filename) {
+        localStorage.setItem("markdown-parser-active", filename);
+        active = filename;
+
+        // Update in editor
+        input.disabled = false;
+        input.value = getMarkdown(filename);
+        update();
+    } else {
+        // Clear everything if there's no file to be set to active
+        localStorage.removeItem("markdown-parser-active");
+        clearEditor();
     }
 
-    // Update in editor
-    input.value = getMarkdown(filename);
-    update();
+    updateTree();
 };
 
 const getActive = () => localStorage.getItem("markdown-parser-active");
@@ -65,6 +107,27 @@ const addFileToTree = filename => {
     button.innerText = escapeHTML(filename);
     button.addEventListener("click", function (event) {
         if (!this.classList.contains("active")) setActive(this.innerText);
+    });
+    button.addEventListener("contextmenu", function (event) {
+        event.preventDefault();
+
+        // Move contextmenu to location of click
+        let x = event.clientX,
+            y = event.clientY;
+        contextmenu.style.top = `${y}px`;
+        contextmenu.style.left = `${x}px`;
+        contextmenu.style.display = "block";
+
+        // Set attribute on contextmenu with info on file to be deleted
+        contextmenu.setAttribute("filename", this.innerText);
+
+        // Add new event listeners to the buttons inside the contextmenu
+        document
+            .getElementById("delete")
+            .removeEventListener("click", deleteButton);
+        document
+            .getElementById("delete")
+            .addEventListener("click", deleteButton);
     });
     if (active === filename) button.classList.add("active");
     li.appendChild(button);
@@ -96,7 +159,7 @@ const update = () => {
 window.onload = () => {
     input = document.getElementById("input");
     output = document.getElementById("output");
-    if (getActive())
+    if (getFiles())
         initState(); // Only initiailize state if there is data being stored
     else input.disabled = true;
 
@@ -149,6 +212,8 @@ window.onload = () => {
         } else update();
     });
 
+    // New file
+    contextmenu = document.getElementById("contextmenu");
     document.getElementById("new").addEventListener("click", function (event) {
         // TODO: Replace with custom modal
         let filenameInput = prompt("Name of file?");
@@ -157,6 +222,11 @@ window.onload = () => {
 
         saveMarkdown("", filenameInput, true);
         setActive(filenameInput);
-        if (input.disabled) input.disabled = false;
+    });
+
+    // Context menu in file tree
+    document.body.addEventListener("click", function (event) {
+        if (event.target.offsetParent != contextmenu)
+            contextmenu.style.display = "none";
     });
 };
