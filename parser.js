@@ -1,4 +1,5 @@
 // TODO in the future
+// Nested lists
 // Tables
 // Footnotes
 // Definition lists
@@ -106,7 +107,7 @@ const processBlock = block => {
     // :check Blockquotes
     // :check Code blocks
     // :check Horizontal breaks
-    // :Images
+    // :check Images
     // :check Unordered and ordered lists
     block = block.trim();
     let type = "p";
@@ -253,7 +254,7 @@ const parseMarkdown = markdown => {
     // MAIN WRAPPER FUNCTION
     // :check 1. Split the file into paragraphs by cutting it at every empty line.
     // :check 2. Remove the "#" characters from header paragraphs and mark them as headers.
-    // 3. Process the text of the paragraphs themselves, splitting them into normal parts and the other Markdown stuff.
+    // :check 3. Process the text of the paragraphs themselves, splitting them into normal parts and the other Markdown stuff.
     // :check 4. Wrap each piece into the correct HTML tags.
     // :check 5. Combine everything into a single HTML document.
 

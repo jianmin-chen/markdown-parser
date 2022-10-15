@@ -1,11 +1,47 @@
-// TODO in the future
-// Add a custom right-click menu in the file tree, with Rename and Delete
-// Add "Download Markdown" and "Download HTML" features
+// TODO in future
+// "Rename" feature
+// "Download Markdown" & "Download HTML" feature
+/*
+    document
+        .getElementById("download-markdown")
+        .addEventListener("click", function (event) {
+            // Download Markdown
+            let a = document.createElement("a");
+            a.setAttribute(
+                "href",
+                `data:text/markdown;charset=utf-8,${encodeURIComponent(
+                    input.value
+                )}`
+            );
+            a.setAttribute("download", `${active.split(" ").join("-")}.md`);
+            a.style.display = "none";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        });
+
+    document
+        .getElementById("download-html")
+        .addEventListener("click", function (event) {
+            // Download HTML
+            let a = document.createElement("a");
+            a.setAttribute(
+                "href",
+                `data:text/html;charset=utf-8,${encodeURIComponent(
+                    output.innerHTML
+                )}`
+            );
+            a.setAttribute("download", `${active.split(" ").join("-")}.html`);
+            a.style.display = "none";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        });
+ */
 
 let input, output, contextmenu;
 
 // Local storage functions
-// TODO: Transfer to API - that's why I'm writing this with async functions when there's no need for async functions
 let filename,
     active,
     files = [];

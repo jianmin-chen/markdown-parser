@@ -1,195 +1,21 @@
 <!DOCTYPE html>
 <html>
     <head>
+        <meta charset="utf-8">
         <title>Markdown Parser</title>
         <base target="_blank" />
         <link
             rel="stylesheet"
             href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.6.0/styles/default.min.css" />
+        <link rel="stylesheet" href="./index.css" />
         <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.6.0/highlight.min.js"></script>
         <script src="./utils.js"></script>
         <script src="./parser.js"></script>
-        <style>
-            /* TODO
-             * Rewrite into a nicer format, possibly place in separate CSS file
-             * Use Autoprefixer
-             * Move fonts to local
-             * Add media queries
-             */
-            @import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono&family=IBM+Plex+Sans&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400;1,600&display=swap");
-
-            body,
-            html {
-                margin: 0;
-                overflow: hidden;
-                padding: 0;
-                height: 100vh;
-                max-height: 100vh;
-            }
-
-            button,
-            textarea {
-                outline: none;
-            }
-
-            #contextmenu {
-                /* The context menu */
-                background-color: white;
-                border-radius: 5px;
-                box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
-                display: none;
-                font-family: "IBM Plex Sans", sans-serif;
-                position: absolute;
-                top: 15px;
-                left: 15px;
-                z-index: 999;
-                width: 150px;
-            }
-
-            #contextmenu .item {
-                cursor: pointer;
-                padding: 0.75rem 1rem;
-            }
-
-            #contextmenu .item:hover {
-                background-color: #f8fafc;
-            }
-
-            #contextmenu .item:nth-child(1):hover {
-                border-top-left-radius: 15px;
-                border-top-right-radius: 15px;
-            }
-
-            #contextmenu .item:nth-last-child(1):hover {
-                border-bottom-left-radius: 15px;
-                border-bottom-right-radius: 15px;
-            }
-
-            #contextmenu .item:not(:nth-last-child(1)) {
-                border-bottom: 1px solid #e2e8f0;
-            }
-
-            #wrapper {
-                display: flex;
-                height: 100%;
-            }
-
-            #input,
-            #output {
-                flex: 3;
-                overflow-y: auto;
-                max-height: 100vh;
-            }
-
-            #menu {
-                background-color: #f1f5f9;
-                border-right: 1px solid #cbd5e1;
-                flex: 1;
-                position: relative;
-            }
-
-            #new {
-                /* New file button */
-                background-color: transparent;
-                border: 0;
-                border-top: 1px solid #cbd5e1;
-                color: #94a3b8;
-                cursor: pointer;
-                display: block;
-                font-family: "IBM Plex Sans", sans-serif;
-                font-size: 1.1rem;
-                position: absolute;
-                bottom: 0;
-                left: 0;
-                padding: 1rem;
-                text-align: left;
-                width: 100%;
-            }
-
-            #menu ul {
-                /* File tree */
-                font-family: "IBM Plex Sans", sans-serif;
-                list-style: none;
-                padding: 0;
-            }
-
-            #menu ul li button {
-                background-color: transparent;
-                border: none;
-                display: block;
-                font-family: inherit;
-                font-size: inherit;
-                padding: 0.5rem 1rem;
-                text-align: left;
-                width: 100%;
-            }
-
-            #menu ul li button.active,
-            #menu ul li button:hover {
-                background-color: #e2e8f0;
-                cursor: pointer;
-            }
-
-            #input {
-                border: none;
-                font-family: "IBM Plex Mono", monospace;
-                font-size: 0.995rem;
-                outline: none;
-                overflow-y: scroll;
-                padding: 3rem;
-                resize: none;
-            }
-
-            #output {
-                border-left: 1px solid #cbd5e1;
-                font-family: "IBM Plex Serif", serif;
-                font-size: 1.2rem;
-                line-height: 1.6;
-            }
-
-            #output > div {
-                /* Actual Markdown content */
-                margin: auto;
-                padding: 2.5rem 0;
-                max-width: 85%;
-            }
-
-            #output > div *:nth-child(1) {
-                margin-top: 0;
-            }
-
-            /* Markdown styles */
-            #output h1,
-            h2,
-            h3,
-            h4,
-            h5,
-            h6 {
-                line-height: normal;
-            }
-
-            #output blockquote {
-                border-left: 3px solid;
-                padding-left: 2rem;
-            }
-
-            #output code {
-                font-family: "IBM Plex Mono", monospace;
-                font-size: 1.1rem;
-            }
-
-            #output img {
-                width: 100%;
-            }
-
-            #output .hljs {
-                overflow-x: auto;
-                padding: 2rem;
-            }
-        </style>
     </head>
     <body>
         <div id="contextmenu">
+            <div class="item" id="download-markdown">Download Markdown</div>
+            <div class="item" id="download-html">Download HTML</div>
             <div class="item" id="delete">
                 <span style="color: red">Delete</span>
             </div>
