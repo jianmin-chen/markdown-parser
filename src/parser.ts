@@ -1,15 +1,11 @@
-// TODO in the future
-// Add support for tables
-
-// PART TO TOKENIZER
+// PART OF TOKENIZER
 
 const splitBlock: Function = (block: string, inner: boolean = false) => {
-    // TODO: Add token types here
     // What we need to process here:
     // :check Italic
     // :check Bold
     // :check Inline code
-    // Links
+    // :check Links
 
     let specialChars: Array<string> = ["*", "`"];
     let fragments = [];

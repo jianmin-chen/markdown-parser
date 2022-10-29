@@ -10,7 +10,7 @@
 
 @font-face {
     font-family: "IBM Plex Serif";
-    src: url("./fonts/IBMPlexSans-Regular.ttf") format("truetype");
+    src: url("./fonts/IBMPlexSerif-Regular.ttf") format("truetype");
 }
 
 @font-face {
@@ -40,15 +40,18 @@
 
 * {
     -webkit-box-sizing: border-box;
-            box-sizing: border-box;
+    box-sizing: border-box;
 }
 
-body, html {
+body,
+html {
     margin: 0;
     padding: 0;
 }
 
-button, textarea {
+button,
+input,
+textarea {
     outline: none;
     resize: none;
 }
@@ -58,7 +61,7 @@ button, textarea {
     background-color: white;
     border-radius: 5px;
     -webkit-box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
-            box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
     display: none;
     font-family: var(--sans-serif);
     position: absolute;
@@ -79,17 +82,17 @@ button, textarea {
 
 #contextmenu .item:nth-child(1):hover {
     /* Add border radius */
-    border-top-left-radius: 15px;
-    border-top-right-radius: 15px;
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
 }
 
-#contextmenu .item:nth-child(1):hover {
+#contextmenu .item:nth-last-child(1):hover {
     border-bottom-left-radius: 15px;
     border-bottom-right-radius: 15px;
 }
 
 #contextmenu .item:not(:nth-last-child(1)) {
-    border-bottom:1px solid #e2e8f0;
+    border-bottom: 1px solid #e2e8f0;
 }
 
 #menu {
@@ -97,8 +100,8 @@ button, textarea {
     background-color: #f1f5f9;
     border-right: 1px solid #cbd5e1;
     -webkit-box-flex: 1;
-        -ms-flex: 1;
-            flex: 1;
+    -ms-flex: 1;
+    flex: 1;
     position: relative;
 }
 
@@ -142,11 +145,12 @@ button, textarea {
     width: 100%;
 }
 
-#input, #output {
+#input,
+#output {
     /* Input/output containers */
     -webkit-box-flex: 3;
-        -ms-flex: 3;
-            flex: 3;
+    -ms-flex: 3;
+    flex: 3;
     overflow-y: auto;
 }
 
@@ -203,8 +207,20 @@ h6 {
     padding: 2rem;
 }
 
+#output .tasklist {
+    list-style-type: none;
+    padding-left: 0;
+}
+
+#output .tasklist input[type="checkbox"] {
+    line-height: inherit;
+    margin-right: 6px;
+    vertical-align: middle;
+}
+
 @media screen and (max-width: 991.98px) {
-    #input, #output {
+    #input,
+    #output {
         width: 100%;
     }
 
@@ -219,7 +235,8 @@ h6 {
 }
 
 @media screen and (min-width: 992px) {
-    body, html {
+    body,
+    html {
         overflow: hidden;
         height: 100vh;
         max-height: 100vh;
@@ -239,7 +256,8 @@ h6 {
         left: 0;
     }
 
-    #input, #output {
+    #input,
+    #output {
         max-height: 100vh;
     }
 

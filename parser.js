@@ -1,15 +1,3 @@
-// TODO in the future
-// Nested lists
-// Tables
-// Footnotes
-// Definition lists
-// Task lists
-// :check Subscript
-// :check Superscript
-// Highlight
-// :check Strikethrough
-// Heading IDs
-
 // PART OF TOKENIZER
 
 const splitBlock = (block, inner = false) => {
@@ -67,6 +55,21 @@ const splitBlock = (block, inner = false) => {
             type: "li",
             content: splitBlock(block.slice(block.match(/[0-9]+\./)[0].length))
         };
+    else if (block.search(/\- \[[X ]{1}\] /) === 0) {
+        // Task list
+        let ti = {
+            type: "ti",
+            content: splitBlock(
+                block.slice(block.match(/\- \[[X ]{1}\] /)[0].length)
+            ),
+            attributes: { checked: false }
+        };
+
+        // Check if the task item has been checked off or not
+        let tiMatch = block.match(/\- \[[X ]{1}\] /)[0];
+        if (tiMatch.includes("X")) ti.attributes.checked = true;
+        return ti;
+    }
 
     while (block.length) {
         let curr = block.charAt(0);
@@ -101,7 +104,7 @@ const splitBlock = (block, inner = false) => {
     return fragments;
 };
 
-const processBlock = block => {
+const processBlock = (block, i) => {
     // What we need to process here:
     // :check Headings
     // :check Blockquotes
@@ -112,6 +115,7 @@ const processBlock = block => {
     block = block.trim();
     let type = "p";
     let header = 0;
+    let attributes = {};
 
     if (block === "---") {
         // Horizontal lines
@@ -125,10 +129,16 @@ const processBlock = block => {
             header++;
         }
 
-        if (fragment[0] == " ") {
+        if (fragment[0] === " ") {
             // No space afterwards != header
             type = `h${header}`;
             block = block.slice(header).trim();
+
+            // All IDs should begin with a letter and may be followed by any number of letters, digits, hyphens, underscores, colons, or periods
+            let id = block.replace(/[^a-zA-Z0-9 ]/g, "");
+            attributes = {
+                id: `h-${i}-${id.toLowerCase().split(" ").join("-")}`
+            }; // Give header ID based on header content
         }
     } else if (block.startsWith(">")) {
         // Blockquotes
@@ -145,6 +155,12 @@ const processBlock = block => {
         // Ordered list
         return {
             type: "ol",
+            content: block.split("\n").flatMap(li => splitBlock(li, false))
+        };
+    else if (block.search(/\- \[[X ]{1}\] /) === 0)
+        // Task list
+        return {
+            type: "tl",
             content: block.split("\n").flatMap(li => splitBlock(li, false))
         };
     else if (block.startsWith("```")) {
@@ -167,14 +183,13 @@ const processBlock = block => {
         alt = alt.slice(1, alt.length - 1); // Remove the brackets around alt value
         let src = block.match(/\(.+\)/)[0];
         src = src.slice(1, src.length - 1); // Remove the parentheses around src value
-        return {
-            type: "img",
-            content: -1,
-            attributes: { alt, src }
-        };
+        type = "img";
+        block = -1;
+        attributes = { alt, src };
     }
 
     let token = { type, content: block != -1 ? splitBlock(block, false) : -1 };
+    if (attributes) token.attributes = attributes;
     return token;
 };
 
@@ -195,6 +210,22 @@ const parse = tokens => {
             });
         else if (token.type === "boldItalic")
             return tag("b", [tag("i", parse(token.content))]);
+        else if (token.type === "tl")
+            // Use unordered list for task list (for accessibility purposes)
+            return tag("ul", parse(token.content), {
+                class: "tasklist",
+                role: "tasklist"
+            });
+        else if (token.type === "ti")
+            // Task list item
+            return tag("li", [
+                tag("input", -1, {
+                    disabled: "",
+                    type: "checkbox",
+                    ...(token.attributes.checked && { checked: "" })
+                }),
+                tag("span", parse(token.content))
+            ]);
         else
             return tag(
                 token.type,
@@ -265,6 +296,7 @@ const parseMarkdown = markdown => {
     let codeFragments = [];
     let olFragments = [];
     let ulFragments = [];
+    let tlFragments = [];
     for (let i = 0; i < blocks.length; i++) {
         let block = blocks[i];
 
@@ -280,6 +312,13 @@ const parseMarkdown = markdown => {
             // End of ordered list
             fragments.push(olFragments.join("\n"));
             olFragments = [];
+        }
+
+        let tlRegex = block.length ? block.search(/\- \[[X ]{1}\] /) : -1;
+        if (!(tlRegex === 0) && tlFragments.length) {
+            // End of task list
+            fragments.push(tlFragments.join("\n"));
+            tlFragments = [];
         }
 
         if (!block.length && !inCodeBlock) continue; // Newline
@@ -298,16 +337,19 @@ const parseMarkdown = markdown => {
         } else if (inCodeBlock) codeFragments.push(block);
         else if (ulRegex === 0) ulFragments.push(block);
         else if (olRegex === 0) olFragments.push(block);
+        else if (tlRegex === 0) tlFragments.push(block);
         else fragments.push(block);
     }
 
     if (ulFragments.length)
         fragments.push(ulFragments.join("\n")); // End of unordered list
-    else if (olFragments.length) fragments.push(olFragments.join("\n")); // End of unordered list
+    else if (olFragments.length)
+        fragments.push(olFragments.join("\n")); // End of unordered list
+    else if (tlFragments.length) fragments.push(tlFragments.join("\n")); // End of task list
 
     let wrapper = tag("div"); // Contains the output
-    for (let fragment of fragments)
-        wrapper.content.push(processBlock(fragment));
+    for (let i = 0; i < fragments.length; i++)
+        wrapper.content.push(processBlock(fragments[i], i));
     wrapper.content = parse(wrapper.content);
     return renderHTML(wrapper);
 };

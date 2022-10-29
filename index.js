@@ -1,206 +1,210 @@
-// TODO in future
-// "Rename" feature
-// "Download Markdown" & "Download HTML" feature
-/*
-    document
-        .getElementById("download-markdown")
-        .addEventListener("click", function (event) {
-            // Download Markdown
-            let a = document.createElement("a");
-            a.setAttribute(
-                "href",
-                `data:text/markdown;charset=utf-8,${encodeURIComponent(
-                    input.value
-                )}`
-            );
-            a.setAttribute("download", `${active.split(" ").join("-")}.md`);
-            a.style.display = "none";
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-        });
+let input, output, menu, contextmenu, editor;
 
-    document
-        .getElementById("download-html")
-        .addEventListener("click", function (event) {
-            // Download HTML
-            let a = document.createElement("a");
-            a.setAttribute(
-                "href",
-                `data:text/html;charset=utf-8,${encodeURIComponent(
-                    output.innerHTML
-                )}`
-            );
-            a.setAttribute("download", `${active.split(" ").join("-")}.html`);
-            a.style.display = "none";
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-        });
- */
+class Editor {
+    constructor(input, output, menu, contextmenu) {
+        // * Initializing state involves setting up the file tree, the current active file (if any)
+        this.input = input;
+        this.output = output;
+        this.menu = menu;
+        this.contextmenu = contextmenu;
 
-let input, output, contextmenu;
+        this.files = {};
+        this.activeFile;
 
-// Local storage functions
-let filename,
-    active,
-    files = [];
+        // File tree
+        this.filetree = [];
+        this.filetreeDom = [];
 
-const updateTree = remove => {
-    // Update in tree
-    document.getElementById("tree").innerHTML = "";
-    for (let i = files.length - 1; i >= 0; i--) {
-        let file = files[i];
-        if (file.innerText === remove) {
-            // Remove from tree
-            files.splice(i, 1);
-            continue;
-        } else if (file.innerText === active)
-            file.querySelector("button").classList.add("active");
-        else if (file.querySelector("button").classList.contains("active"))
-            file.querySelector("button").classList.remove("active");
-        document.getElementById("tree").appendChild(file);
+        let files = this.getFiles();
+        if (files) {
+            // There are files, so let's populate the file tree
+            this.files = JSON.parse(files); // Make sure to actually convert to an object!
+            this.updateFiletree();
+
+            // Also, make sure to check if there's an active file
+            let active = localStorage.getItem("markdown-parser-active");
+            if (active) {
+                this.activeFile = active;
+                this.updateEditor();
+            }
+        } else {
+            // No files, so let's initialize storage
+            localStorage.setItem("markdown-parser", "{}");
+        }
     }
-};
 
-const clearEditor = () => {
-    input.disabled = true;
-    input.value = "";
-    output.innerHTML = "";
-};
-
-const deleteButton = () => {
-    deleteFile(contextmenu.getAttribute("filename"));
-    contextmenu.style.display = "none";
-};
-
-const saveMarkdown = (markdown, filename = getActive(), isNew = false) => {
-    let files = localStorage.getItem("markdown-parser");
-    if (files)
-        localStorage.setItem(
-            "markdown-parser",
-            JSON.stringify({
-                ...JSON.parse(files),
-                [filename]: markdown
-            })
-        );
-    else
-        localStorage.setItem(
-            "markdown-parser",
-            JSON.stringify({ [filename]: markdown })
-        );
-
-    if (isNew) addFileToTree(filename);
-};
-
-const getMarkdown = filename => {
-    let files = localStorage.getItem("markdown-parser");
-    if (files) return JSON.parse(files)[filename];
-};
-
-const getFiles = () => {
-    let files = localStorage.getItem("markdown-parser");
-    if (files) return Object.keys(JSON.parse(files));
-};
-
-const deleteFile = filename => {
-    let files = localStorage.getItem("markdown-parser");
-    if (files) {
-        // Delete file by filename
-        files = JSON.parse(files);
-        if (files[filename] != undefined) {
-            delete files[filename];
-            localStorage.setItem("markdown-parser", JSON.stringify(files));
-            if (active === filename) setActive();
-            updateTree(filename);
-        } else throw new Error("404 Not Found: File doesn't exist");
-    } else throw new Error("404 Not Found: File doesn't exist");
-};
-
-const setActive = filename => {
-    if (filename) {
+    setActive(filename) {
+        this.activeFile = filename;
         localStorage.setItem("markdown-parser-active", filename);
-        active = filename;
-
-        // Update in editor
-        input.disabled = false;
-        input.value = getMarkdown(filename);
-        update();
-    } else {
-        // Clear everything if there's no file to be set to active
-        localStorage.removeItem("markdown-parser-active");
-        clearEditor();
     }
 
-    updateTree();
-};
+    newFile(filename) {
+        // C
+        if (filename in this.files) throw new Error("File already exists");
+        this.files[filename] = "";
+        localStorage.setItem("markdown-parser", JSON.stringify(this.files));
 
-const getActive = () => localStorage.getItem("markdown-parser-active");
+        // Update the filetree
+        this.updateFiletree();
 
-const addFileToTree = filename => {
-    let li = document.createElement("li");
-    let button = document.createElement("button");
-    button.innerText = escapeHTML(filename);
-    button.addEventListener("click", function (event) {
-        if (!this.classList.contains("active")) setActive(this.innerText);
-    });
-    button.addEventListener("contextmenu", function (event) {
-        event.preventDefault();
+        // Update the editor (set new file to active)
+        this.setActive(filename);
 
-        // Move contextmenu to location of click
-        let x = event.clientX,
-            y = event.clientY;
-        contextmenu.style.top = `${y}px`;
-        contextmenu.style.left = `${x}px`;
-        contextmenu.style.display = "block";
-
-        // Set attribute on contextmenu with info on file to be deleted
-        contextmenu.setAttribute("filename", this.innerText);
-
-        // Add new event listeners to the buttons inside the contextmenu
-        document
-            .getElementById("delete")
-            .removeEventListener("click", deleteButton);
-        document
-            .getElementById("delete")
-            .addEventListener("click", deleteButton);
-    });
-    if (active === filename) button.classList.add("active");
-    li.appendChild(button);
-    files.push(li);
-};
-
-const initState = () => {
-    active = getActive();
-    files = [];
-    for (let filename of getFiles()) {
-        // Create a list item > button for each file in the "tree"
-        addFileToTree(filename);
+        this.updateEditor();
     }
 
-    setActive(active);
-};
+    getFiles() {
+        // R
+        return localStorage.getItem("markdown-parser");
+    }
 
-const update = () => {
-    // ? Notice the use of update() multiple times below in the event listeners. I've observed a couple of interesting things:
-    // ? * If I only place update() in keydown, then it bounces and passes in all characters except for the one the user just typed in
-    // ? * If I only place update() in input, then Backspace doesn't work
-    output.innerHTML = parseMarkdown(input.value);
-    output.querySelectorAll(".hljs").forEach(el => hljs.highlightElement(el));
+    getFile(filename) {
+        // R - specific file
+        return this.files[filename];
+    }
 
-    // Save to storage
-    saveMarkdown(input.value);
-};
+    fileExists(filename) {
+        // R - does file exist
+        return filename in this.files;
+    }
+
+    updateFile() {
+        // U
+        this.files[this.activeFile] = this.input.value;
+        localStorage.setItem("markdown-parser", JSON.stringify(this.files));
+    }
+
+    renameFile(oldFilename, newFilename) {
+        // U - rename file
+        this.files[newFilename] = this.files[oldFilename];
+        delete this.files[oldFilename];
+        localStorage.setItem("markdown-parser", JSON.stringify(this.files));
+        if (oldFilename === this.activeFile) {
+            this.activeFile = newFilename;
+            localStorage.setItem("markdown-parser-active", this.activeFile);
+        }
+
+        // Update in file tree
+        this.filetree[this.filetree.indexOf(oldFilename)] = newFilename;
+        this.filetreeDom[this.filetreeDom.indexOf(oldFilename)] = newFilename;
+        this.menu.querySelectorAll("button").forEach(button => {
+            if (button.innerText === oldFilename)
+                button.innerText = newFilename;
+        });
+    }
+
+    deleteFile(filename) {
+        // D
+        if (!(filename in this.files))
+            throw new Error("Filename doesn't exist");
+
+        // If active, there is no more active
+        if (filename === this.activeFile) {
+            this.activeFile = undefined;
+            this.input.value = "";
+            this.input.disabled = true;
+            this.output.innerHTML = "";
+            localStorage.setItem("markdown-parser-active", "");
+        }
+
+        // Remove from storage
+        delete this.files[filename];
+        localStorage.setItem("markdown-parser", JSON.stringify(this.files));
+
+        // Remove from file tree
+        this.filetree.splice(this.filetree.indexOf(filename), 1);
+        this.filetreeDom.splice(this.filetreeDom.indexOf(filename), 1);
+        this.menu.querySelectorAll("button").forEach(button => {
+            if (button.innerText === filename) button.remove();
+        });
+    }
+
+    updateEditor() {
+        // Update the editor if a new file becomes active
+        this.input.value = this.files[this.activeFile];
+        this.input.disabled = false;
+        this.update();
+
+        // Make sure to update the highlighted "active" file in the file tree
+        this.menu.querySelectorAll("button").forEach(button => {
+            if (
+                button.innerText !== this.activeFile &&
+                button.classList.contains("active")
+            )
+                button.classList.remove("active");
+            else if (
+                button.innerText === this.activeFile &&
+                !button.classList.contains("active")
+            )
+                button.classList.add("active");
+        });
+    }
+
+    updateFiletree() {
+        this.filetree = Object.keys(this.files);
+
+        for (let file of this.filetree.filter(
+            file => !this.filetreeDom.includes(file)
+        )) {
+            // Go through each file, generating the HTML for each
+            let li = document.createElement("li");
+            let button = document.createElement("button");
+            button.innerText = escapeHTML(file);
+
+            // Add event listeners
+            let self = this;
+            button.addEventListener("click", function (event) {
+                self.setActive(this.innerText);
+                self.updateEditor();
+            });
+            button.addEventListener("contextmenu", function (event) {
+                event.preventDefault();
+
+                // Move contextmenu to location of click
+                let x = event.clientX,
+                    y = event.clientY;
+                self.contextmenu.style.top = `${y}px`;
+                self.contextmenu.style.left = `${x}px`;
+                self.contextmenu.style.display = "block";
+
+                // Set attribute on contextmenu with info on file to be deleted
+                contextmenu.setAttribute("filename", this.innerText);
+            });
+
+            li.appendChild(button);
+            this.menu.appendChild(li);
+        }
+
+        this.filetreeDom = this.filetree;
+    }
+
+    update() {
+        // ? Notice the use of update() multiple times below in the event listeners. I've observed a couple of interesting things:
+        // ? * If I only place update() in keydown, then it bounces and passes in all characters except for the one the user just typed in
+        // ? * If I only place update() in input, then Backspace doesn't work
+        this.output.innerHTML = parseMarkdown(this.input.value);
+        this.output
+            .querySelectorAll(".hljs")
+            .forEach(element => hljs.highlightElement(element));
+
+        // Save to storage
+        this.updateFile();
+    }
+}
 
 window.onload = () => {
     input = document.getElementById("input");
     output = document.getElementById("output");
-    if (getFiles())
-        initState(); // Only initiailize state if there is data being stored
-    else input.disabled = true;
+    menu = document.getElementById("tree");
+    contextmenu = document.getElementById("contextmenu");
+
+    input.disabled = true;
+    editor = new Editor(input, output, tree, contextmenu);
 
     // * Obviously, storing and comparing state might be more efficient
-    input.addEventListener("input", update);
+    input.addEventListener("input", function (event) {
+        editor.update();
+    });
 
     let tabs = 0;
     input.addEventListener("keydown", function (event) {
@@ -244,25 +248,94 @@ window.onload = () => {
                 )}${this.value.substring(end)}`;
                 this.selectionStart = this.selectionEnd = start - 1;
             }
-            update();
-        } else update();
+            editor.update();
+        } else editor.update();
     });
 
-    // New file
-    contextmenu = document.getElementById("contextmenu");
     document.getElementById("new").addEventListener("click", function (event) {
-        // TODO: Replace with custom modal
-        let filenameInput = prompt("Name of file?");
-        while (!filenameInput || getMarkdown(filenameInput))
+        let filenameInput = prompt("Name of file? ");
+        if (filenameInput === null) return;
+        while (!filenameInput || editor.fileExists(filenameInput)) {
             filenameInput = prompt("Try again. Name of file?");
+            if (filenameInput === null) return;
+        }
 
-        saveMarkdown("", filenameInput, true);
-        setActive(filenameInput);
+        editor.newFile(filenameInput);
     });
 
     // Context menu in file tree
     document.body.addEventListener("click", function (event) {
-        if (event.target.offsetParent != contextmenu)
+        if (
+            contextmenu.style.display !== "none" &&
+            event.target.offsetParent != contextmenu
+        )
             contextmenu.style.display = "none";
     });
+
+    // Delete in context menu
+    document
+        .getElementById("delete")
+        .addEventListener("click", function (event) {
+            let filename = this.parentNode.getAttribute("filename");
+            editor.deleteFile(filename);
+            contextmenu.style.display = "none";
+        });
+
+    // Rename in context menu
+    document
+        .getElementById("rename")
+        .addEventListener("click", function (event) {
+            let filename = this.parentNode.getAttribute("filename");
+            let newFilename = prompt("Rename file to what? ");
+            if (newFilename === null) return;
+            while (!newFilename.length || editor.fileExists(newFilename)) {
+                newFilename = prompt("Try again. Rename file to what? ");
+                if (newFilename === null) return;
+            }
+
+            editor.renameFile(filename, newFilename);
+
+            contextmenu.style.display = "none";
+        });
+
+    // Download HTML/Markdown in context menu
+    document
+        .getElementById("download-html")
+        .addEventListener("click", function (event) {
+            let filename = this.parentNode.getAttribute("filename");
+            let a = document.createElement("a");
+            a.setAttribute(
+                "href",
+                `data:text/html;charset=utf-8,${encodeURIComponent(
+                    parseMarkdown(editor.getFile(filename))
+                )}`
+            );
+            a.setAttribute("download", `${filename.split(" ").join("-")}.html`);
+            a.style.display = "none";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+
+            contextmenu.style.display = "none";
+        });
+
+    document
+        .getElementById("download-markdown")
+        .addEventListener("click", function (event) {
+            let filename = this.parentNode.getAttribute("filename");
+            let a = document.createElement("a");
+            a.setAttribute(
+                "href",
+                `data:text/markdown;charset=utf-8,${encodeURIComponent(
+                    editor.getFile(filename)
+                )}`
+            );
+            a.setAttribute("download", `${filename.split(" ").join("-")}.md`);
+            a.style.display = "none";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+
+            contextmenu.style.display = "none";
+        });
 };
