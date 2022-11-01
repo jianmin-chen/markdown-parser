@@ -102,7 +102,7 @@ class Editor {
         if (filename === this.activeFile) {
             this.activeFile = undefined;
             this.input.value = "";
-            this.input.disabled = true;
+            this.input.readOnly = true;
             this.output.innerHTML = "";
             localStorage.setItem("markdown-parser-active", "");
         }
@@ -168,7 +168,7 @@ class Editor {
                 self.contextmenu.style.display = "block";
 
                 // Set attribute on contextmenu with info on file to be deleted
-                contextmenu.setAttribute("filename", this.innerText);
+                self.contextmenu.setAttribute("filename", this.innerText);
             });
 
             li.appendChild(button);
@@ -198,7 +198,7 @@ window.onload = () => {
     menu = document.getElementById("tree");
     contextmenu = document.getElementById("contextmenu");
 
-    input.disabled = true;
+    input.readOnly = true;
     editor = new Editor(input, output, tree, contextmenu);
 
     // * Obviously, storing and comparing state might be more efficient
@@ -256,7 +256,7 @@ window.onload = () => {
         let filenameInput = prompt("Name of file? ");
         if (filenameInput === null) return;
         while (!filenameInput || editor.fileExists(filenameInput)) {
-            filenameInput = prompt("Try again. Name of file?");
+            filenameInput = prompt("Try again. Name of file? ");
             if (filenameInput === null) return;
         }
 
