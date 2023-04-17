@@ -1,0 +1,32 @@
+{
+  "name": "markdown-parser",
+  "version": "1.0.0",
+  "description": "DIY Markdown parser from scratch.",
+  "main": "index.js",
+  "scripts": {
+    "start": "http-server",
+    "format": "prettier --ignore-path ./.prettierignore --write ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jianmin-chen/markdown-parser.git"
+  },
+  "keywords": [
+    "markdown",
+    "markdown-parser"
+  ],
+  "author": "Jianmin Chen",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/jianmin-chen/markdown-parser/issues"
+  },
+  "homepage": "https://github.com/jianmin-chen/markdown-parser#readme",
+  "dependencies": {
+    "http-server": "^14.1.1"
+  },
+  "devDependencies": {
+    "prettier": "^2.8.4",
+    "typescript": "^4.9.5"
+  },
+  "type": "module"
+}

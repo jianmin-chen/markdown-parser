@@ -1,0 +1,281 @@
+@font-face {
+    font-family: "IBM Plex Mono";
+    src: url("/assets/fonts/IBMPlexMono-Regular.ttf") format("truetype");
+}
+
+@font-face {
+    font-family: "IBM Plex Sans";
+    src: url("/assets/fonts/IBMPlexSans-Regular.ttf") format("truetype");
+}
+
+@font-face {
+    font-family: "IBM Plex Serif";
+    src: url("/assets/fonts/IBMPlexSerif-Regular.ttf") format("truetype");
+}
+
+@font-face {
+    font-family: "IBM Plex Serif";
+    font-style: italic;
+    src: url("/assets/fonts/IBMPlexSerif-RegularItalic.ttf") format("truetype");
+}
+
+@font-face {
+    font-family: "IBM Plex Serif";
+    font-weight: bold;
+    src: url("/assets/fonts/IBMPlexSerif-SemiBold.ttf") format("truetype");
+}
+
+@font-face {
+    font-family: "IBM Plex Serif";
+    font-style: italic;
+    font-weight: bold;
+    src: url("/assets/fonts/IBMPlexSerif-SemiBoldItalic.ttf")
+        format("truetype");
+}
+
+:root {
+    --monospace: "IBM Plex Mono", monospace;
+    --sans-serif: "IBM Plex Sans", sans-serif;
+    --serif: "IBM Plex Serif", serif;
+}
+
+* {
+    -webkit-box-sizing: border-box;
+    box-sizing: border-box;
+}
+
+body,
+html {
+    margin: 0;
+    padding: 0;
+}
+
+button,
+input,
+textarea {
+    outline: none;
+    resize: none;
+}
+
+#contextmenu {
+    /* The context menu */
+    background-color: white;
+    border-radius: 5px;
+    -webkit-box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+    display: none;
+    font-family: var(--sans-serif);
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    z-index: 999;
+    width: 150px;
+}
+
+#contextmenu .item {
+    cursor: pointer;
+    padding: 0.75rem 1rem;
+}
+
+#contextmenu .item:hover {
+    background-color: #f8fafc;
+}
+
+#contextmenu .item:nth-child(1):hover {
+    /* Add border radius */
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+}
+
+#contextmenu .item:nth-last-child(1):hover {
+    border-bottom-left-radius: 15px;
+    border-bottom-right-radius: 15px;
+}
+
+#contextmenu .item:not(:nth-last-child(1)) {
+    border-bottom: 1px solid #e2e8f0;
+}
+
+#menu {
+    /* Menu */
+    background-color: #f1f5f9;
+    border-right: 1px solid #cbd5e1;
+    -webkit-box-flex: 1;
+    -ms-flex: 1;
+    flex: 1;
+    position: relative;
+}
+
+#menu ul {
+    /* File tree */
+    font-family: var(--sans-serif);
+    list-style: none;
+    padding: 0;
+}
+
+#menu ul li button {
+    background-color: transparent;
+    border: none;
+    display: block;
+    font-family: inherit;
+    font-size: inherit;
+    padding: 0.5rem 1rem;
+    text-align: left;
+    width: 100%;
+}
+
+#menu ul li button.active,
+#menu ul li button:hover {
+    background-color: #e2e8f0;
+    cursor: pointer;
+}
+
+#new {
+    /* New file button */
+    background-color: transparent;
+    border: 0;
+    border-top: 1px solid #cbd5e1;
+    color: #94a3b8;
+    cursor: pointer;
+    display: block;
+    font-family: var(--sans-serif);
+    font-size: 1.1rem;
+    padding: 1rem;
+    text-align: left;
+    text-align: left;
+    width: 100%;
+}
+
+#input,
+#output {
+    /* Input/output containers */
+    -webkit-box-flex: 3;
+    -ms-flex: 3;
+    flex: 3;
+    overflow-y: auto;
+}
+
+#input {
+    border: none;
+    font-family: var(--monospace);
+    font-size: 0.995rem;
+}
+
+#output {
+    border-left: 1px solid #cbd5e1;
+    font-family: var(--serif);
+    font-size: 1.2rem;
+    line-height: 1.6;
+}
+
+#output > div {
+    /* Actual Markdown content */
+    margin: auto;
+    padding: 2.5rem 0;
+}
+
+#output > div *:nth-child(1) {
+    margin-top: 0;
+}
+
+/* Markdown styles */
+#output h1,
+#output h2,
+#output h3,
+#output h4,
+#output h5,
+#output h6 {
+    font-family: var (--serif);
+    line-height: normal;
+}
+
+#output h1 code,
+#output h2 code,
+#output h3 code,
+#output h4 code,
+#output h5 code,
+#output h6 code {
+    font-size: inherit;
+}
+
+#output blockquote {
+    border-left: 3px solid;
+    padding-left: 2rem;
+}
+
+#output code {
+    font-family: var(--monospace);
+    font-size: 1.1rem;
+}
+
+#output img {
+    width: 100%;
+}
+
+#output .hljs {
+    overflow-x: auto;
+    padding: 2rem;
+}
+
+#output .tasklist {
+    list-style-type: none;
+    padding-left: 0;
+}
+
+#output .tasklist input[type="checkbox"] {
+    line-height: inherit;
+    margin-right: 6px;
+    vertical-align: middle;
+}
+
+@media screen and (max-width: 991.98px) {
+    #input,
+    #output {
+        width: 100%;
+    }
+
+    #input {
+        padding: 2rem 2rem 0 2rem;
+        min-height: 100vh;
+    }
+
+    #output > div {
+        max-width: 95%;
+    }
+}
+
+@media screen and (min-width: 992px) {
+    body,
+    html {
+        overflow: hidden;
+        height: 100vh;
+        max-height: 100vh;
+    }
+
+    #wrapper {
+        /* Flex container for editor */
+        display: -webkit-box;
+        display: -ms-flexbox;
+        display: flex;
+        height: 100%;
+    }
+
+    #new {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+    }
+
+    #input,
+    #output {
+        max-height: 100vh;
+    }
+
+    #input {
+        padding: 3rem;
+    }
+
+    #output > div {
+        max-width: 85%;
+    }
+}
