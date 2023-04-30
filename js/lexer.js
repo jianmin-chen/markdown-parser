@@ -17,7 +17,6 @@ const TokenType = {
     Dash: "Dash",
     Tilde: "Tilde",
     Caret: "Caret",
-    Plus: "Plus",
     Underscore: "Underscore",
     Tab: "Tab",
     Ignore: "Ignore"
@@ -162,9 +161,6 @@ const scanToken = () => {
             break;
         case "^":
             addToken(TokenType.Caret, "^", "^");
-            break;
-        case "+":
-            addToken(TokenType.Plus, "+", "+");
             break;
         case "_":
             addToken(TokenType.Underscore, "_", "_");
